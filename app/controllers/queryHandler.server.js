@@ -1,5 +1,6 @@
 'use strict';
 
+var Queries = require('../models/queries.js');
 // imageSearch results = [
 // 	{
 // 		url: '...',
@@ -22,11 +23,35 @@ function queryHandler() {
 	return {
 		imageSearch: function(req, res) {
 			var query = req.params.query;
-			res.send(query);
+
+			//TODO: figure out search
+			var newQuery = new Queries({
+				queryTerm: query,
+				date: Date.now()
+			});
+
+			newQuery.save(function (err, newQuery, numAffected) {
+				if (err) throw err;
+				res.json(newQuery);
+			});
 		},
 
 		getLatestQueries: function(req, res) {
-			res.send('latest search results');
+
+			Queries
+				.find({})
+				.limit(2)
+				.exec( function(err, queries) {
+					if (err) res.send(err);
+					//could just res.json(queries), but wanted to use example project's keys. Also shows you can choose what to show the client out of your db documents.
+					res.json(queries.map(function(query) {
+						return {
+							term: query.queryTerm,
+							when: query.date
+						};
+					}));		
+				});
+			
 		}
 	};
 }
