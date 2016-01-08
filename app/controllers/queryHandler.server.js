@@ -40,7 +40,7 @@ function queryHandler() {
 
 			Queries
 				.find({})
-				.limit(2)
+				.limit(10)
 				.exec( function(err, queries) {
 					if (err) res.send(err);
 					//could just res.json(queries), but wanted to use example project's keys. Also shows you can choose what to show the client out of your db documents.
