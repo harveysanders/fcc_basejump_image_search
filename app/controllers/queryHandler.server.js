@@ -5,47 +5,47 @@ var request = require('request');
 
 require('dotenv').load();
 
+function useBingApi(query, page, res) {
+	var q 		= encodeURIComponent(query);
+	var skip 	= (page - 1) * 50 || 0;
+	var acctKey = process.env.BING_API_KEY;
+	var rootUri = 'https://api.datamarket.azure.com';
+	var auth    = new Buffer(acctKey + ':' + acctKey).toString('base64');
+	var options = {
+					url: rootUri + '/Bing/Search/Image?$format=json&Query=%27' + q + '%27&$skip=' + skip,
+					headers: {'Authorization' : 'Basic ' + auth}
+				};
+
+	console.log('url: ' + options.url);
+	request(options, function(error, response, body) {
+		if (error) {
+			console.log(error);
+		}
+		console.log('statusCode: ' + response.statusCode);
+		console.log('headers: ' + JSON.stringify(response.headers));
+	 	if (!error && response.statusCode === 200) {
+		    var results = JSON.parse(body);
+		    var formattedResults = results.d.results.map(function(searchRes) {
+		    	return {
+		    		url: searchRes.MediaUrl,
+					snippet: searchRes.Title,
+					thumbnail: searchRes.Thumbnail.MediaUrl,
+					context: searchRes.SourceUrl
+		    	};
+		    });
+		   	res.json(formattedResults);
+	  	}
+	});
+}
+
 function queryHandler() {
 	return {
 		imageSearch: function(req, res) {
+
 			var query = req.params.query;
-			var skip = (req.query.offset - 1) * 50 || 0;
+			var page = req.query.offset;
 
-			//Bing Search API
-			var acctKey = process.env.BING_API_KEY;
-			var rootUri = 'https://api.datamarket.azure.com';
-			var auth    = new Buffer(acctKey + ':' + acctKey).toString('base64');
-			
-			var q = encodeURIComponent(query);
-
-			var bingOpts = {
-				url: rootUri + '/Bing/Search/Image?$format=json&Query=%27' + q + '%27&$skip=' + skip,
-				headers: {'Authorization' : 'Basic ' + auth}
-			};
-
-			console.log('url: ' + bingOpts.url);
-			request(bingOpts, function(error, response, body) {
-				if (error) {
-					console.log(error);
-				}
-				console.log('statusCode: ' + response.statusCode);
-				console.log('headers: ' + JSON.stringify(response.headers));
-				 if (!error && response.statusCode === 200) {
-				    var results = JSON.parse(body);
-				    console.log(results);
-
-				    var formattedResults = results.d.results.map(function(searchRes) {
-				    	return {
-				    		url: searchRes.MediaUrl,
-							snippet: searchRes.Title,
-							thumbnail: searchRes.Thumbnail.MediaUrl,
-							context: searchRes.SourceUrl
-				    	};
-				    });
-
-				   	res.json(formattedResults);
-				  }
-			});
+			useBingApi(query, page, res);
 
 			//keep record of searches
 			var newQuery = new Queries({
